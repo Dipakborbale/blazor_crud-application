@@ -1,0 +1,70 @@
+﻿@page "/addorder"
+@using RepositoryLayer.Models
+@using ViewModels
+@inject BlazorApp1.Service.IBlazorService service
+@inject NavigationManager navigate
+@inject IDialogService dialogService
+@inject ISnackbar Snackbar
+
+<h3>Add Order</h3>
+
+<MudContainer Class="mt-4" MaxWidth.Medium>
+    <MudPaper Class="p-4 px-md-6">
+        <MudText Typo="Typo.h6">Add Order</MudText>
+
+        <MudSelect Label="Select Product" @bind-Value="selectedProductId" Variant="Variant.Outlined" Class="mt-2">
+            @foreach (var product in products)
+            {
+                <MudSelectItem Value="@product.Id">@product.Name</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudTextField @bind-Value="orderName" Label="Order By" Variant="Variant.Outlined" Class="mt-2"></MudTextField>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Success" Class="mt-4" @onclick="AddOrderAsync">
+            Add Order
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" @onclick="NavigateBack">
+            Back to Products
+        </MudButton>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<ProductVM> products = new List<ProductVM>();
+    private int selectedProductId;
+    private string orderName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        products = (await service.GetAll()).ToList();
+    }
+
+    private async Task AddOrderAsync()
+    {
+        try
+        {
+            var order = new OrderVM
+                {
+                    ProductId = selectedProductId,
+                    OrderBy = orderName
+                };
+
+            var orderId = await service.AddOrder(selectedProductId, order);
+
+            Snackbar.Add("Order Created successfully.", Severity.Success);
+            navigate.NavigateTo("/products");
+        }
+        catch (Exception ex)
+        {
+            // Handle exceptions or show an error message
+            await dialogService.ShowMessageBox("Error", $"Failed to add order. {ex.Message}");
+        }
+    }
+
+    private void NavigateBack()
+    {
+        navigate.NavigateTo("/products");
+    }
+}
